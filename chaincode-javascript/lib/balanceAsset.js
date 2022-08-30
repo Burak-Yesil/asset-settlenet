@@ -12,11 +12,18 @@ const sortKeysRecursive  = require('sort-keys-recursive');
 const { Contract } = require('fabric-contract-api');
 const queryAsset = require('./queryAsset-ConstructorAttempt');
 let queryContract = new queryAsset();
+const ClientIdentity = require('fabric-shim').ClientIdentity;
 
 
 class balanceAsset extends Contract {
 
     async BalanceSR(ctx, submissionID){
+        //ABAC
+        let cid = new ClientIdentity(stub);
+        if (cid.assertAttributeValue('role', 'approver')) { 
+            throw new Error('Not a valid user');
+        }
+
         const exists = await queryContract.AssetExists(ctx, submissionID);
         if (!exists) {
             throw new Error(`The asset ${submissionID} does not exist`);
@@ -31,6 +38,12 @@ class balanceAsset extends Contract {
     }
 
     async CumulateSR(ctx, submissionID){
+        //ABAC
+        let cid = new ClientIdentity(stub);
+        if (cid.assertAttributeValue('role', 'approver')) { 
+            throw new Error('Not a valid user');
+        }
+
         const exists = await queryContract.AssetExists(ctx, submissionID);
         if (!exists) {
             throw new Error(`The asset ${submissionID} does not exist`);

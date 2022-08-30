@@ -11,6 +11,7 @@ const stringify  = require('json-stringify-deterministic');
 const sortKeysRecursive  = require('sort-keys-recursive');
 const { Contract } = require('fabric-contract-api');
 let queryContract = new queryAsset();
+const ClientIdentity = require('fabric-shim').ClientIdentity;
 
 
 class submitAsset extends Contract {
@@ -167,6 +168,14 @@ class submitAsset extends Contract {
         salesReturnsTransactionTimestamp, orderTimestamp, shippingTimestamp,
         reasonCode, authorizationID, authorizationCode, authorizationTimestamp, authorizedAmt, 
         authorizedSysID, cNPIndicator) {
+
+        //ABAC
+        let cid = new ClientIdentity(stub);
+        if (cid.assertAttributeValue('role', 'approver')) { 
+            throw new Error('Not a valid user');
+        }
+
+        
         const exists = await queryContract.AssetExists(ctx, submissionID);
         if (exists) {
             throw new Error(`The asset ${submissionID} already exists`);
@@ -201,12 +210,6 @@ class submitAsset extends Contract {
         //we insert data in alphabetic order using 'json-stringify-deterministic' and 'sort-keys-recursive'
         await ctx.stub.putState(asset.SubmissionID, Buffer.from(stringify(sortKeysRecursive(asset))));
         return JSON.stringify(asset);
-    }
-
-    // AssetExists returns true when asset with given ID exists in world state.
-    async AssetExists(ctx, submissionID) {
-        const assetJSON = await ctx.stub.getState(submissionID);
-        return assetJSON && assetJSON.length > 0;
     }
 
 

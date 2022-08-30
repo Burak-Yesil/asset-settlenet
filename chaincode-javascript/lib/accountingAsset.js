@@ -11,12 +11,19 @@ const stringify  = require('json-stringify-deterministic');
 const sortKeysRecursive  = require('sort-keys-recursive');
 const { Contract } = require('fabric-contract-api');
 let queryContract = new queryAsset();
+const ClientIdentity = require('fabric-shim').ClientIdentity;
 
 
 class accountingAsset extends Contract {
 
 
     async SettlePayment(ctx, submissionID){
+        //ABAC
+        let cid = new ClientIdentity(stub);
+        if (cid.assertAttributeValue('role', 'approver')) { 
+            throw new Error('Not a valid user');
+        }
+
         const exists = await queryContract.AssetExists(ctx, submissionID);
         if (!exists) {
             throw new Error(`The asset ${submissionID} does not exist`);
@@ -31,6 +38,12 @@ class accountingAsset extends Contract {
     }
 
     async ClearPayment(ctx, submissionID){
+        //ABAC
+        let cid = new ClientIdentity(stub);
+        if (cid.assertAttributeValue('role', 'approver')) { 
+            throw new Error('Not a valid user');
+        }
+
         const exists = await queryContract.AssetExists(ctx, submissionID);
         if (!exists) {
             throw new Error(`The asset ${submissionID} does not exist`);
